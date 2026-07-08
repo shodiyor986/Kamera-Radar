@@ -1,0 +1,140 @@
+body { 
+  font-family: 'Segoe UI', Tahoma, sans-serif; 
+  background: #0b0f19; 
+  color: #00ff66; 
+  margin: 0; 
+  padding: 20px; 
+}
+h2 { 
+  text-align: center; 
+  color: #ffffff; 
+  letter-spacing: 2px; 
+}
+.dashboard { 
+  display: grid; 
+  grid-template-columns: 320px 1fr; 
+  gap: 20px; 
+  max-width: 1400px; 
+  margin: auto; 
+}
+.panel { 
+  background: #111625; 
+  border: 1px solid #1f293d; 
+  padding: 20px; 
+  border-radius: 8px; 
+}
+h3 { 
+  border-bottom: 1px solid #1f293d; 
+  padding-bottom: 10px; 
+  color: #ffffff; 
+  margin-top: 0; 
+}
+.radar-box { 
+  position: relative; 
+  width: 140px; 
+  height: 140px; 
+  border: 2px solid #00ff66; 
+  border-radius: 50%; 
+  margin: 15px auto; 
+  background: repeating-radial-gradient(circle, #111625, #111625 20px, #14291f 21px); 
+}
+.radar-line { 
+  position: absolute; 
+  width: 50%; 
+  height: 2px; 
+  background: #00ff66; 
+  top: 50%; 
+  left: 50%; 
+  transform-origin: left center; 
+  animation: radar-rotate 2.5s linear infinite; 
+  display: none; 
+}
+@keyframes radar-rotate { 
+  from { transform: rotate(0deg); } 
+  to { transform: rotate(360deg); } 
+}
+.btn { 
+  background: #00ff66; 
+  color: #0b0f19; 
+  border: none; 
+  padding: 12px; 
+  width: 100%; 
+  cursor: pointer; 
+  font-weight: bold; 
+  border-radius: 4px; 
+  text-transform: uppercase; 
+}
+.btn-danger { 
+  background: #ff003c; 
+  color: white; 
+  width: auto; 
+}
+input[type="date"] { 
+  padding: 10px; 
+  background: #1f293d; 
+  border: 1px solid #374151; 
+  color: white; 
+  border-radius: 4px; 
+}
+.search-box { 
+  display: flex; 
+  gap: 10px; 
+  margin-bottom: 15px; 
+}
+.cam-item { 
+  background: #1f293d; 
+  border: 1px solid #374151; 
+  padding: 12px; 
+  margin: 10px 0; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  color: #fff; 
+}
+.cam-item:hover { 
+  border-color: #00ff66; 
+}
+.screen-wrapper { 
+  position: relative; 
+  width: 100%; 
+  height: 400px; 
+  background: #000; 
+  border: 2px solid #1f293d; 
+  border-radius: 6px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+}
+video { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  display: none; 
+}
+.overlay-msg { 
+  color: #4b5563; 
+}
+.live-tag { 
+  position: absolute; 
+  top: 15px; 
+  left: 15px; 
+  background: #ff003c; 
+  color: white; 
+  padding: 4px 10px; 
+  font-weight: bold; 
+  border-radius: 3px; 
+  display: none; 
+}
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin-top: 15px; 
+}
+th, td { 
+  border: 1px solid #1f293d; 
+  padding: 10px; 
+  text-align: left; 
+}
+th { 
+  background: #1f293d; 
+  color: #00ff66; 
+}
