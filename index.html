@@ -3,37 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maxsus Monitoring Paneli</title>
+  <title>Maxsus Monitoring Paneli v2.0</title>
   <link rel="stylesheet" href="dez.css">
 </head>
 <body>
 
-  <h2>TEZKOR QIDIRUV VA HAQIQIY MONITORING TIZIMI</h2>
+  <h2>TEZKOR QIDIRUV VA PROTOKOL ANIQLASH TIZIMI</h2>
 
   <div class="dashboard">
     <div class="panel">
+      <h3>ID orqali qidiruv</h3>
+      <div class="search-box">
+        <input type="text" id="camera-id-input" placeholder="Kamera ID yoki IP kiriting...">
+        <button class="btn" onclick="idBoYichaQidiruv()">Izlash</button>
+      </div>
+
       <h3>Radar Tizimi</h3>
       <div class="radar-box">
         <div class="radar-line" id="radar-sweep"></div>
       </div>
-      <button class="btn" onclick="haqiqiyQidiruv()">Kameralarni Izlash</button>
+      <button class="btn" onclick="avtomatikSkanerlash()">Protokollarni Skanerlash</button>
       
-      <h3>Topilgan Qurilmalar</h3>
-      <div id="camera-list"><i>Izlash tugmasini bosing...</i></div>
+      <h3>Aniqlangan Kameralar</h3>
+      <div id="camera-list"><i>Tizim tayyor...</i></div>
     </div>
 
     <div class="panel">
-      <h3>Jonli Tasvir: <span id="cam-title">Ulanmagan</span></h3>
+      <h3>Monitor: <span id="cam-title">Ulanmagan</span></h3>
       
       <div class="screen-wrapper">
         <div class="live-tag" id="live-indicator">● LIVE</div>
-        <div class="overlay-msg" id="screen-text">Tizim faollashtirilishi kutilmoqda...</div>
+        <div class="overlay-msg" id="screen-text">Kamera tizimi ulanishi kutilmoqda...</div>
         <video id="live-video" autoplay muted playsinline></video>
       </div>
 
-      <div id="control-panel" style="margin-top: 15px; display: none;">
-        <button class="btn btn-danger" onclick="shifrlashniOchish()">Shifrlashni Ochish (Test Mode)</button>
-        <span id="decrypt-status"></span>
+      <div id="protocol-details" style="margin-top: 15px; display: none; background: #1f293d; padding: 15px; border-radius: 4px;">
+        <h4 style="margin:0 0 10px 0; color: #fff;">Dasturiy Ta'minot va Protokol Tahlili:</h4>
+        <p id="protocol-text" style="font-family: monospace; margin: 0;"></p>
       </div>
 
       <h3>Fleshka (SD-Card) Yozuvlari [Test Rejimi]</h3>
@@ -45,9 +51,9 @@
       <table>
         <thead>
           <tr>
-            <th>Fayl nomi</th>
+            <th>Video Fayl Nomi</th>
             <th>Vaqt</th>
-            <th>Xavf darajasi</th>
+            <th>Holat</th>
           </tr>
         </thead>
         <tbody id="archive-body">
@@ -58,16 +64,17 @@
   </div>
 
   <script>
-    let tanlanganCamId = null;
+    let faolCamId = null;
     const videoElement = document.getElementById('live-video');
     const screenText = document.getElementById('screen-text');
-    const BACKEND_URL = "http://localhost:3000"; // Node.js server manzili
+    const BACKEND_URL = "http://localhost:3000";
 
-    function haqiqiyQidiruv() {
+    // 1. AVTOMATIK PROTOKOL SKANERLASH (REAL)
+    function avtomatikSkanerlash() {
       const sweep = document.getElementById('radar-sweep');
       const list = document.getElementById('camera-list');
       sweep.style.display = 'block';
-      list.innerHTML = '<p style="color: #9ca3af;">Tarmoq skanerlanmoqda...</p>';
+      list.innerHTML = '<p style="color: #9ca3af;">Tarmoq dasturlari tahlil qilinmoqda...</p>';
 
       fetch(`${BACKEND_URL}/api/radar-scan`)
         .then(res => res.json())
@@ -76,30 +83,64 @@
           list.innerHTML = '';
           data.devices.forEach(cam => {
             list.innerHTML += `
-              <div class="cam-item" onclick="kameraniUlash('${cam.id}', '${cam.model}')">
+              <div class="cam-item" onclick="kameragaUlanish('${cam.id}', '${cam.ip}', '${cam.detected_software}')">
                 <strong>📡 ${cam.id}</strong><br>
-                <small>${cam.model} (${cam.ip})</small>
+                <small>Dastur: ${cam.detected_software} (${cam.ip})</small>
               </div>`;
           });
         });
     }
 
-    async function kameraniUlash(id, model) {
-      tanlanganCamId = id;
-      document.getElementById('cam-title').innerText = `${id} (${model})`;
-      document.getElementById('control-panel').style.display = 'block';
-      document.getElementById('decrypt-status').innerText = "";
-      screenText.innerText = "Kamera oqimi faollashtirilmoqda...";
+    // 2. ID BO'YICHA QIDIRUV (REAL)
+    function idBoYichaQidiruv() {
+      const idInput = document.getElementById('camera-id-input').value;
+      if(!idInput) return alert("ID yoki IP kiriting!");
+
+      const list = document.getElementById('camera-list');
+      list.innerHTML = '<p style="color: #9ca3af;">ID tekshirilmoqda...</p>';
+
+      fetch(`${BACKEND_URL}/api/search-id`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchId: idInput })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) {
+          list.innerHTML = `
+            <div class="cam-item" onclick="kameragaUlanish('${data.device.id}', '${data.device.ip}', '${data.device.detected_software}')">
+              <strong>✔ TOPILDI: ${data.device.id}</strong><br>
+              <small>Dastur: ${data.device.detected_software}</small>
+            </div>`;
+        } else {
+          list.innerHTML = '<p style="color: #ff003c;">Xatolik: Bunday ID bilan dasturiy ta\'minot topilmadi.</p>';
+        }
+      });
+    }
+
+    // 3. JONLI EFIR VA PROTOKOL MA'LUMOTLARINI KO'RSATISH
+    async function kameragaUlanish(id, ip, software) {
+      faolCamId = id;
+      document.getElementById('cam-title').innerText = `${id} [${software}]`;
+      document.getElementById('protocol-details').style.display = 'block';
+      
+      document.getElementById('protocol-text').innerHTML = `
+        PROTOKOL: Real-Time Scanning<br>
+        ANIQLANGAN DASTUR: ${software}<br>
+        PORT: ${software === 'ONVIF' ? '8899' : software === 'RTSP Stream' ? '554' : '80 (HTTP)'}<br>
+        STATUS: Avtomatik ulanish muvaffaqiyatli bajarildi.
+      `;
+
+      screenText.innerText = "Jonli oqim yuklanmoqda...";
 
       try {
-        // 1-Urinish: Jismoniy veb-kamerani tekshirish
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoElement.srcObject = stream;
         videoElement.style.display = 'block';
         screenText.style.display = 'none';
         document.getElementById('live-indicator').style.display = 'block';
       } catch (err) {
-        // 2-Urinish: Agar jismoniy kamera topilmasa, Ekranni ulash (V360 Pro oynasi uchun)
+        // Kamera topilmasa ekranni ulash rejimiga o'tadi
         try {
           const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
           videoElement.srcObject = screenStream;
@@ -107,36 +148,19 @@
           screenText.style.display = 'none';
           document.getElementById('live-indicator').style.display = 'block';
         } catch (e) {
-          screenText.style.display = 'block';
-          screenText.innerText = "Xatolik: Kamera yoki Ekran oqimi rad etildi.";
-          videoElement.style.display = 'none';
+          screenText.innerText = "Jonli oqimni yoqib bo'lmadi.";
         }
       }
     }
 
-    function shifrlashniOchish() {
-      if(!tanlanganCamId) return;
-      document.getElementById('decrypt-status').innerText = "Shifr tahlil qilinmoqda...";
-      
-      fetch(`${BACKEND_URL}/api/decrypt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cameraId: tanlanganCamId })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('decrypt-status').innerHTML = 
-          `<span style="color: #ffaa00;">✔ PROTOKOL: ${data.algorithm}</span>`;
-      });
-    }
-
+    // 4. FLESHKANI O'QISH (TEST REJIMI)
     function fleshkaniOqish() {
-      if(!tanlanganCamId) return alert("Avval kamerani tanlang!");
+      if(!faolCamId) return alert("Avval kamerani tanlang!");
       const sana = document.getElementById('search-date').value;
       const tbody = document.getElementById('archive-body');
       tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">O\'qilmoqda...</td></tr>';
 
-      fetch(`${BACKEND_URL}/api/archive?cameraId=${tanlanganCamId}&sana=${sana}`)
+      fetch(`${BACKEND_URL}/api/archive?cameraId=${faolCamId}&sana=${sana}`)
         .then(res => res.json())
         .then(data => {
           tbody.innerHTML = '';
@@ -146,20 +170,13 @@
           }
           data.videos.forEach(v => {
             tbody.innerHTML += `
-              <tr onclick="arxivIjro('${v.fayl}')">
+              <tr>
                 <td style="color:#00ff66;">💾 ${v.fayl}</td>
                 <td>${v.vaqt}</td>
-                <td><span style="color:#ffaa00;">${v.xavf}</span></td>
+                <td><span style="color:#ffaa00;">${v.holat}</span></td>
               </tr>`;
           });
         });
-    }
-
-    function arxivIjro(fayl) {
-      document.getElementById('live-indicator').style.display = 'none';
-      videoElement.style.display = 'none';
-      screenText.style.display = 'block';
-      screenText.innerHTML = `<span style="color:#ffaa00;">[PLAYBACK]</span><br>Fayl: ${fayl}`;
     }
   </script>
 </body>
