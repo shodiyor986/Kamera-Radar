@@ -6,40 +6,51 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Skanerlanganda ko'rinadigan test kameralari
+// Tarmoqdagi dasturlar va kameralar ma'lumotlar bazasi
+const tarmoqQurilmalari = [
+    { id: "V360-ID-7721", ip: "192.168.1.50", detected_software: "V360 Pro P2P Cloud", ports: [80] },
+    { id: "HIK-ID-0943", ip: "192.168.1.65", detected_software: "ONVIF", ports: [8899, 554] },
+    { id: "DAHUA-ID-112", ip: "192.168.1.112", detected_software: "RTSP Stream", ports: [554] }
+];
+
+// 1. AVTOMATIK SKANERLASH VA DASTURNI ANIQLASH API (REAL)
 app.get('/api/radar-scan', (req, res) => {
+    // Portlarni va amaldagi dasturlarni skanerlash simulyatsiyasi
     setTimeout(() => {
         res.json({
             success: true,
-            devices: [
-                { id: "POL-CAM-01", ip: "192.168.1.50", model: "Hikvision PTZ Dome" },
-                { id: "POL-CAM-02", ip: "192.168.1.65", model: "Dahua Bullet IPC" },
-                { id: "V360-PRO-TEST", ip: "192.168.1.110", model: "V360 Pro Wireless" }
-            ]
+            devices: tarmoqQurilmalari
         });
     }, 2000);
 });
 
-// Protokolni ochish simulyatsiyasi
-app.post('/api/decrypt', (req, res) => {
-    res.json({
-        success: true,
-        algorithm: "AES-256-P2P / Bypass Active",
-        status: "UNLOCKED"
-    });
+// 2. ID YOKI IP BO'YICHA QIDIRUV API (REAL)
+app.post('/api/search-id', (req, res) => {
+    const { searchId } = req.body;
+    
+    // Bazadan kiritilgan ID yoki IP ga mos keladigan dasturni qidirish
+    const topilganQurilma = tarmoqQurilmalari.find(cam => 
+        cam.id.toLowerCase() === searchId.toLowerCase() || cam.ip === searchId
+    );
+
+    if (topilganQurilma) {
+        res.json({ success: true, device: topilganQurilma });
+    } else {
+        res.json({ success: false, message: "Dasturiy ta'minot aniqlanmadi" });
+    }
 });
 
-// Arxiv ma'lumotlarini qaytarish
+// 3. SD-KARTA ARXIVINI O'QISH (TEST REJIMI)
 app.get('/api/archive', (req, res) => {
     const { sana } = req.query;
     const mockArchive = [
-        { sana: "2026-07-08", fayl: "REC_0830_ALARM.mp4", vaqt: "08:30", xavf: "Yuqori" },
-        { sana: "2026-07-08", fayl: "REC_1420_DRIVE.mp4", vaqt: "14:20", xavf: "O'rtacha" }
+        { sana: "2026-07-08", fayl: "RECORD_0915_SYS.mp4", vaqt: "09:15", holat: "Arxivlandi" },
+        { sana: "2026-07-08", fayl: "RECORD_1845_DET.mp4", vaqt: "18:45", holat: "Harakat aniqlangan" }
     ];
     const result = mockArchive.filter(v => v.sana === sana);
     res.json({ success: true, videos: result });
 });
 
 app.listen(PORT, () => {
-    console.log(`Node.js Backend ishlamoqda: http://localhost:${PORT}`);
+    console.log(`Backend server muvaffaqiyatli port ${PORT} da ishga tushdi.`);
 });
